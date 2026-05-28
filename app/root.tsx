@@ -16,6 +16,12 @@ import globalStyles from './styles/index.scss?url';
 import xtermStyles from '@xterm/xterm/css/xterm.css?url';
 
 import 'virtual:uno.css';
+export const headers = () => {
+  return {
+    "Cross-Origin-Embedder-Policy": "require-corp",
+    "Cross-Origin-Opener-Policy": "same-origin",
+  };
+};
 
 const toastAnimation = cssTransition({
   enter: 'animated fadeInRight',
