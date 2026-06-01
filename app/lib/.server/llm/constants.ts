@@ -43,6 +43,10 @@ export function isReasoningModel(modelName: string): boolean {
   return result;
 }
 
+// Groq API rate limits - free tier has strict TPM constraints
+export const GROQ_TPM_LIMIT = 1200;
+export const GROQ_SAFE_INPUT_TOKENS = 900; // Conservative limit to stay within TPM with completion tokens
+
 // limits the number of model responses that can be returned in a single request
 export const MAX_RESPONSE_SEGMENTS = 2;
 

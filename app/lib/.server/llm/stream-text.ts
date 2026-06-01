@@ -1,5 +1,11 @@
 import { convertToCoreMessages, streamText as _streamText, type Message } from 'ai';
-import { MAX_TOKENS, PROVIDER_COMPLETION_LIMITS, isReasoningModel, type FileMap } from './constants';
+import {
+  MAX_TOKENS,
+  PROVIDER_COMPLETION_LIMITS,
+  isReasoningModel,
+  GROQ_SAFE_INPUT_TOKENS,
+  type FileMap,
+} from './constants';
 import { getSystemPrompt } from '~/lib/common/prompts/prompts';
 import { DEFAULT_MODEL, DEFAULT_PROVIDER, MODIFICATIONS_TAG_NAME, PROVIDER_LIST, WORK_DIR } from '~/utils/constants';
 import type { IProviderSetting } from '~/types/model';
@@ -49,6 +55,43 @@ function sanitizeText(text: string): string {
   sanitized = sanitized.replace(/<boltAction type="file" filePath="package-lock\.json">[\s\S]*?<\/boltAction>/g, '');
 
   return sanitized.trim();
+}
+
+function estimateTokenCount(text: string): number {
+  // Rough token estimation: average of 4 chars per token
+  return Math.ceil(text.length / 4);
+}
+
+function truncateMessagesForGroq(messages: any[], maxInputTokens: number): any[] {
+  let totalTokens = 0;
+  const truncatedMessages = [];
+
+  // Process messages in reverse order (most recent first) to preserve context
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i];
+    const messageTokens = estimateTokenCount(
+      typeof message.content === 'string' ? message.content : JSON.stringify(message.content),
+    );
+
+    if (totalTokens + messageTokens <= maxInputTokens) {
+      totalTokens += messageTokens;
+      truncatedMessages.unshift(message);
+    } else if (truncatedMessages.length === 0) {
+      // Always keep at least the most recent message, but truncate its content
+      const contentStr = typeof message.content === 'string' ? message.content : JSON.stringify(message.content);
+      const maxContentLength = Math.max(1000, maxInputTokens * 4); // ~4 chars per token
+      const truncatedContent = contentStr.substring(0, maxContentLength);
+      truncatedMessages.unshift({
+        ...message,
+        content: truncatedContent + '\n[... message truncated due to token limits ...]',
+      });
+      break;
+    } else {
+      break;
+    }
+  }
+
+  return truncatedMessages;
 }
 
 export async function streamText(props: {
@@ -232,6 +275,22 @@ export async function streamText(props: {
     logger.warn(
       `Token limit warning: requesting ${safeMaxTokens} tokens but model supports max ${modelDetails.maxTokenAllowed || 128000}`,
     );
+  }
+
+  // Handle Groq TPM limits by truncating messages if necessary
+  if (provider.name === 'Groq') {
+    const inputTokens = estimateTokenCount(systemPrompt) +
+      processedMessages.reduce((sum, msg) => {
+        const contentStr = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content);
+        return sum + estimateTokenCount(contentStr);
+      }, 0);
+
+    if (inputTokens > GROQ_SAFE_INPUT_TOKENS) {
+      logger.warn(
+        `Groq token limit: estimated input ${inputTokens} tokens exceeds safe limit ${GROQ_SAFE_INPUT_TOKENS}. Truncating messages.`,
+      );
+      processedMessages = truncateMessagesForGroq(processedMessages, GROQ_SAFE_INPUT_TOKENS);
+    }
   }
 
   // Use maxCompletionTokens for reasoning models (o1, GPT-5), maxTokens for traditional models
