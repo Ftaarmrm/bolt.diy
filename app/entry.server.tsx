@@ -70,8 +70,11 @@ export default async function handleRequest(
 
   responseHeaders.set('Content-Type', 'text/html');
 
+  // Cross-origin isolation headers for WebContainer / SharedArrayBuffer support
+  // Required for proper browser isolation in Coolify behind Traefik
   responseHeaders.set('Cross-Origin-Embedder-Policy', 'require-corp');
   responseHeaders.set('Cross-Origin-Opener-Policy', 'same-origin');
+  responseHeaders.set('Cross-Origin-Resource-Policy', 'cross-origin');
 
   return new Response(body, {
     headers: responseHeaders,
