@@ -16,10 +16,14 @@ import globalStyles from './styles/index.scss?url';
 import xtermStyles from '@xterm/xterm/css/xterm.css?url';
 
 import 'virtual:uno.css';
+
+// Cross-origin isolation headers for WebContainer / SharedArrayBuffer support
+// These headers are critical for Coolify deployments behind Traefik
 export const headers = () => {
   return {
-    "Cross-Origin-Embedder-Policy": "require-corp",
-    "Cross-Origin-Opener-Policy": "same-origin",
+    'Cross-Origin-Embedder-Policy': 'require-corp',
+    'Cross-Origin-Opener-Policy': 'same-origin',
+    'Cross-Origin-Resource-Policy': 'cross-origin',
   };
 };
 
