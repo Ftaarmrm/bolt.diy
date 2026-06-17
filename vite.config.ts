@@ -99,7 +99,7 @@ function chrome129IssuePlugin() {
     name: 'chrome129IssuePlugin',
     configureServer(server: ViteDevServer) {
       server.middlewares.use((req, res, next) => {
-        const raw = req.headers['user-agent']?.match(/Chrom(e|ium)\/([0-9]+)\.);
+        const raw = req.headers['user-agent']?.match(/Chrom(e|ium)\/([0-9]+)\./);
 
         if (raw) {
           const version = parseInt(raw[2], 10);
