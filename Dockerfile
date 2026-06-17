@@ -49,10 +49,10 @@ ARG VITE_LOG_LEVEL=debug
 ARG DEFAULT_NUM_CTX=8192
 
 # Set non-sensitive environment variables
-ENV WRANGLER_SEND_METRICS=false \
-    VITE_LOG_LEVEL=${VITE_LOG_LEVEL} \
-    DEFAULT_NUM_CTX=${DEFAULT_NUM_CTX} \
-    RUNNING_IN_DOCKER=true
+ENV WRANGLER_SEND_METRICS=false
+ENV VITE_LOG_LEVEL=${VITE_LOG_LEVEL}
+ENV DEFAULT_NUM_CTX=${DEFAULT_NUM_CTX}
+ENV RUNNING_IN_DOCKER=true
 
 # ============================================================================
 # CRITICAL: API keys are NEVER passed as build args
